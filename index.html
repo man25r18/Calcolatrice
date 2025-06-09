@@ -1,142 +1,41 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calcolatrice Finta</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #000;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
 
-    .calculator {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px;
-    }
+let display = document.getElementById('display');
+let sciButtons = document.getElementById('sci-buttons');
+let fakeResult = null;
 
-    #display {
-      width: 100%;
-      font-size: 2.5em;
-      text-align: right;
-      padding: 10px;
-      margin-bottom: 10px;
-      background-color: black;
-      color: white;
-      border: none;
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-
-    button {
-      padding: 20px;
-      font-size: 1.5em;
-      border: none;
-      border-radius: 10px;
-      background-color: #333;
-      color: white;
-      cursor: pointer;
-    }
-
-    button.operator {
-      background-color: orange;
-    }
-
-    #secret-input {
-      margin-top: 15px;
-      font-size: 1em;
-      padding: 8px;
-      width: 100%;
-      border-radius: 5px;
-      border: none;
-      color: white;
-      background-color: #111;
-    }
-  </style>
-</head>
-<body>
-
-<div class="calculator">
-  <input type="text" id="display" value="0" disabled />
-  
-  <div class="buttons">
-    <button onclick="clearDisplay()">AC</button>
-    <button onclick="append('%')">%</button>
-    <button onclick="append('/')">÷</button>
-    <button class="operator" onclick="append('*')">×</button>
-
-    <button onclick="append('7')">7</button>
-    <button onclick="append('8')">8</button>
-    <button onclick="append('9')">9</button>
-    <button class="operator" onclick="append('-')">−</button>
-
-    <button onclick="append('4')">4</button>
-    <button onclick="append('5')">5</button>
-    <button onclick="append('6')">6</button>
-    <button class="operator" onclick="append('+')">+</button>
-
-    <button onclick="append('1')">1</button>
-    <button onclick="append('2')">2</button>
-    <button onclick="append('3')">3</button>
-    <button onclick="calculate()">=</button>
-
-    <button onclick="append('0')" style="grid-column: span 2">0</button>
-    <button onclick="append('.')">,</button>
-  </div>
-
-  <input type="text" id="secret-input" placeholder="Risultato finto (opzionale)" />
-</div>
-
-<script>
-  let current = '';
-
-  function append(value) {
-    if (current === '0' && value !== '.') {
-      current = value;
+function press(value) {
+    if (display.innerText === '0' || display.innerText === fakeResult) {
+        display.innerText = value;
     } else {
-      current += value;
+        display.innerText += value;
     }
-    updateDisplay();
-  }
+}
 
-  function clearDisplay() {
-    current = '';
-    updateDisplay();
-  }
+function clearDisplay() {
+    display.innerText = '0';
+}
 
-  function updateDisplay() {
-    document.getElementById('display').value = current || '0';
-  }
-
-  function calculate() {
-    const fakeResult = document.getElementById('secret-input').value;
-    if (fakeResult !== '') {
-      document.getElementById('display').value = fakeResult;
-      current = '';
+function calculate() {
+    const text = display.innerText.trim();
+    if (/^=\d+=?$/.test(text)) {
+        // set fake result mode
+        fakeResult = text.replace(/=/g, '');
+        display.innerText = 'Risultato impostato';
     } else {
-      try {
-        const result = eval(current);
-        document.getElementById('display').value = result;
-        current = result.toString();
-      } catch {
-        document.getElementById('display').value = 'Errore';
-        current = '';
-      }
+        try {
+            let result = eval(display.innerText);
+            if (fakeResult !== null) {
+                display.innerText = fakeResult;
+                fakeResult = null;
+            } else {
+                display.innerText = result;
+            }
+        } catch {
+            display.innerText = 'Errore';
+        }
     }
-  }
-</script>
+}
 
-</body>
-</html>
+function toggleScientific() {
+    sciButtons.classList.toggle('hidden');
+}
