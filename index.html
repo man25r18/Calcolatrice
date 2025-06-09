@@ -32,7 +32,7 @@
       color: #fff;
       text-align: right;
       font-size: 2.2em;
-      padding: 24px 16px 24px 16px;
+      padding: 24px 16px;
       border-radius: 18px;
       margin-bottom: 16px;
       cursor: pointer;
@@ -81,7 +81,6 @@
       font-size: 0.98em;
       text-align: center;
     }
-    /* Responsivo per mobile */
     @media (max-width: 700px) {
       .calculator.landscape { width: 99vw; }
     }
@@ -97,7 +96,6 @@
     </div>
   </div>
   <script>
-    // Tasti base
     const baseButtons = [
       ["C", "+/-", "%", "/"],
       ["7", "8", "9", "x"],
@@ -105,7 +103,6 @@
       ["1", "2", "3", "+"],
       ["0", ".", "="]
     ];
-    // Tasti scientifici
     const scientificButtons = [
       ["2nd","(",")","mc","m+","m-","mr","C","+/-","%","/"],
       ["x²","x³","xʸ","eˣ","10ˣ","7","8","9","x"],
@@ -114,8 +111,7 @@
       ["Rad","sinh","cosh","tanh","π","0",".","="]
     ];
 
-    // Stato
-    let orientation = "portrait"; // "landscape" = scientifica
+    let orientation = "portrait";
     let display = "0";
     let forcedValue = null;
 
@@ -123,13 +119,13 @@
     const displayEl = document.getElementById("display");
     const buttonArea = document.getElementById("buttonArea");
 
-    // Utility
     function toScientific(num, forced) {
       if (forced !== null && !isNaN(forced)) {
         return Number(forced).toExponential(6);
       }
       return Number(num).toExponential(6);
     }
+
     function toNormal(num, forced) {
       if (forced !== null) return forced.toString();
       return num.toString();
@@ -144,7 +140,6 @@
         row.forEach(b => {
           const btn = document.createElement("button");
           btn.className = "btn";
-          // Colorazione stile iOS
           if (["/","x","+","-","="].includes(b)) btn.classList.add("btn-op");
           if (["C","+/-","%"].includes(b) || ["mc","m+","m-","mr","Rad","π","e"].includes(b)) btn.classList.add("btn-func");
           if (b === "0") btn.classList.add("btn-0");
@@ -160,7 +155,7 @@
       let result = orientation === "portrait"
         ? (isNaN(display) ? display : toScientific(display, forcedValue))
         : (forcedValue !== null ? toNormal(display, forcedValue) : display);
-      displayEl.textContent = result;
+      displayEl.textContent = result || "0";
     }
 
     function reset() {
@@ -181,9 +176,9 @@
         updateDisplay();
         return;
       }
-      // Operazioni semplici demo (puoi espandere la logica per veri calcoli)
+
       if (["/","x","+","-"].includes(val)) {
-        if (/[+\-x/]/.test(display[display.length-1])) return;
+        if (/[+\-x/]/.test(display[display.length - 1])) return;
         display += val;
       } else if (val === "+/-") {
         if (display.startsWith("-")) display = display.slice(1);
@@ -193,14 +188,14 @@
       } else if (val === ".") {
         if (!display.includes(".")) display += ".";
       } else if (!isNaN(val)) {
-        display = display === "0" ? val : display + val;
-      } else {
-        // Scientifici: nessuna azione reale (demo)
+        display = (display === "0" || display === "-0") ? 
+                  (display.startsWith("-") ? "-" + val : val) : 
+                  display + val;
       }
+
       updateDisplay();
     }
 
-    // Cambio modalità toccando il display
     displayEl.onclick = () => {
       orientation = (orientation === "portrait" ? "landscape" : "portrait");
       calc.classList.toggle("landscape", orientation === "landscape");
@@ -208,11 +203,9 @@
       updateDisplay();
     };
 
-    // Inizializza calcolatrice
     renderButtons();
     updateDisplay();
 
-    // Per touch: scorri per cambiare modalità (opzionale)
     let startX = null;
     displayEl.addEventListener('touchstart', e => startX = e.touches[0].clientX);
     displayEl.addEventListener('touchend', e => {
