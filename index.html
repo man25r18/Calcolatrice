@@ -1,123 +1,226 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>iOS Style Calculator</title>
+  <meta charset="UTF-8">
+  <title>Calcolatrice iOS Simulata</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body {
-      background-color: #000;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      color: white;
+      background: #181818;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      font-family: 'SF Pro Display', Arial, sans-serif;
       margin: 0;
-      padding: 0;
     }
-
     .calculator {
-      max-width: 320px;
-      margin: 50px auto;
-      padding: 20px;
+      width: 320px;
+      border-radius: 30px;
+      background: #222;
+      box-shadow: 0 6px 36px #000a;
+      padding: 24px 16px 24px 16px;
+      margin-top: 40px;
+      transition: width .3s;
+      user-select: none;
     }
-
+    .calculator.landscape {
+      width: 620px;
+    }
     .display {
-      background: black;
+      background: #111;
+      color: #fff;
       text-align: right;
-      font-size: 48px;
-      padding: 20px;
-      color: white;
-      border: none;
+      font-size: 2.2em;
+      padding: 24px 16px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      min-height: 2.2em;
+      font-variant-numeric: tabular-nums;
+      overflow-x: auto;
     }
-
     .buttons {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-gap: 10px;
-      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-
-    button {
-      padding: 20px;
-      font-size: 24px;
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      background: #333;
+      color: #fff;
       border: none;
-      border-radius: 50%;
-      background-color: #333;
-      color: white;
-      transition: 0.2s;
+      border-radius: 16px;
+      font-size: 1.2em;
+      height: 54px;
+      cursor: pointer;
+      outline: none;
+      transition: background .15s;
     }
-
-    button:active {
-      background-color: #555;
+    .btn:active {
+      background: #444;
     }
-
-    .operator {
-      background-color: orange;
+    .btn-op {
+      background: #f69906;
+      color: #fff;
     }
-
-    .function {
-      background-color: #a5a5a5;
-      color: black;
+    .btn-func {
+      background: #a5a5a5;
+      color: #111;
     }
-
-    .zero {
-      grid-column: span 2;
-      border-radius: 40px;
-      text-align: left;
-      padding-left: 40px;
+    .btn-0 {
+      flex: 2;
+    }
+    .note {
+      margin-top: 10px;
+      color: #ccc;
+      font-size: 0.98em;
+      text-align: center;
+    }
+    @media (max-width: 700px) {
+      .calculator.landscape { width: 99vw; }
     }
   </style>
 </head>
 <body>
-  <div class="calculator">
-    <div class="display" id="display">0</div>
-    <div class="buttons">
-      <button class="function" onclick="clearDisplay()">AC</button>
-      <button class="function">±</button>
-      <button class="function">%</button>
-      <button class="operator">÷</button>
-
-      <button onclick="appendNumber('7')">7</button>
-      <button onclick="appendNumber('8')">8</button>
-      <button onclick="appendNumber('9')">9</button>
-      <button class="operator">×</button>
-
-      <button onclick="appendNumber('4')">4</button>
-      <button onclick="appendNumber('5')">5</button>
-      <button onclick="appendNumber('6')">6</button>
-      <button class="operator">−</button>
-
-      <button onclick="appendNumber('1')">1</button>
-      <button onclick="appendNumber('2')">2</button>
-      <button onclick="appendNumber('3')">3</button>
-      <button class="operator">+</button>
-
-      <button class="zero" onclick="appendNumber('0')">0</button>
-      <button onclick="appendNumber('.')">.</button>
-      <button class="operator" onclick="showResult()">=</button>
+  <div class="calculator" id="calc">
+    <div class="display" id="display" title="Tocca per cambiare modalità">0</div>
+    <div class="buttons" id="buttonArea"></div>
+    <div class="note">
+      Tocca il display per cambiare tra modalità base/scientifica.<br>
+      Premi "=" per impostare il risultato desiderato.
     </div>
   </div>
-
   <script>
-    let input = '';
-    const display = document.getElementById('display');
+    const baseButtons = [
+      ["C", "+/-", "%", "/"],
+      ["7", "8", "9", "x"],
+      ["4", "5", "6", "-"],
+      ["1", "2", "3", "+"],
+      ["0", ".", "="]
+    ];
+    const scientificButtons = [
+      ["2nd","(",")","mc","m+","m-","mr","C","+/-","%","/"],
+      ["x²","x³","xʸ","eˣ","10ˣ","7","8","9","x"],
+      ["√x","³√x","y√x","ln","log₁₀","4","5","6","-"],
+      ["x!","sin","cos","tan","e","1","2","3","+"],
+      ["Rad","sinh","cosh","tanh","π","0",".","="]
+    ];
 
-    // 👇 imposta qui il risultato fisso desiderato
-    const forcedResult = "3.772.623.428";
+    let orientation = "portrait";
+    let display = "0";
+    let forcedValue = null;
 
-    function appendNumber(number) {
-      if (input.length > 20) return;
-      input += number;
-      display.innerText = input;
+    const calc = document.getElementById("calc");
+    const displayEl = document.getElementById("display");
+    const buttonArea = document.getElementById("buttonArea");
+
+    function toScientific(num, forced) {
+      if (forced !== null && !isNaN(forced)) {
+        return Number(forced).toExponential(6);
+      }
+      return Number(num).toExponential(6);
     }
 
-    function clearDisplay() {
-      input = '';
-      display.innerText = '0';
+    function toNormal(num, forced) {
+      if (forced !== null) return forced.toString();
+      return num.toString();
     }
 
-    function showResult() {
-      display.innerText = forcedResult;
-      input = '';
+    function renderButtons() {
+      buttonArea.innerHTML = "";
+      const btns = orientation === "portrait" ? baseButtons : scientificButtons;
+      btns.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+        row.forEach(b => {
+          const btn = document.createElement("button");
+          btn.className = "btn";
+          if (["/","x","+","-","="].includes(b)) btn.classList.add("btn-op");
+          if (["C","+/-","%"].includes(b) || ["mc","m+","m-","mr","Rad","π","e"].includes(b)) btn.classList.add("btn-func");
+          if (b === "0") btn.classList.add("btn-0");
+          btn.textContent = b;
+          btn.onclick = () => handleButton(b);
+          rowDiv.appendChild(btn);
+        });
+        buttonArea.appendChild(rowDiv);
+      });
     }
+
+    function updateDisplay() {
+      let result = orientation === "portrait"
+        ? (isNaN(display) ? display : toScientific(display, forcedValue))
+        : (forcedValue !== null ? toNormal(display, forcedValue) : display);
+      displayEl.textContent = result || "0";
+    }
+
+    function reset() {
+      display = "0";
+      forcedValue = null;
+      updateDisplay();
+    }
+
+    function handleButton(val) {
+      if (val === "C") return reset();
+      if (val === "=") {
+  try {
+    let expression = display.replace(/x/g, "*");
+    let result = eval(expression);
+    display = result.toString();
+  } catch (e) {
+    display = "Errore";
+  }
+  updateDisplay();
+  return;
+}
+      }
+      if (forcedValue !== null) {
+        display = forcedValue.toString();
+        updateDisplay();
+        return;
+      }
+
+      if (["/","x","+","-"].includes(val)) {
+        if (/[+\-x/]/.test(display[display.length - 1])) return;
+        display += val;
+      } else if (val === "+/-") {
+        if (display.startsWith("-")) display = display.slice(1);
+        else if (display !== "0") display = "-" + display;
+      } else if (val === "%") {
+        display = (parseFloat(display) / 100).toString();
+      } else if (val === ".") {
+        if (!display.includes(".")) display += ".";
+      } else if (!isNaN(val)) {
+        display = (display === "0" || display === "-0") ? 
+                  (display.startsWith("-") ? "-" + val : val) : 
+                  display + val;
+      }
+
+      updateDisplay();
+    }
+
+    displayEl.onclick = () => {
+      orientation = (orientation === "portrait" ? "landscape" : "portrait");
+      calc.classList.toggle("landscape", orientation === "landscape");
+      renderButtons();
+      updateDisplay();
+    };
+
+    renderButtons();
+    updateDisplay();
+
+    let startX = null;
+    displayEl.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    displayEl.addEventListener('touchend', e => {
+      if (startX !== null && Math.abs(e.changedTouches[0].clientX - startX) > 60) {
+        displayEl.onclick();
+      }
+      startX = null;
+    });
   </script>
 </body>
 </html>
