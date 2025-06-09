@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Calcolatrice iOS Simulata</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body {
+      background: #181818;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      font-family: 'SF Pro Display', Arial, sans-serif;
+      margin: 0;
+    }
+    .calculator {
+      width: 320px;
+      border-radius: 30px;
+      background: #222;
+      box-shadow: 0 6px 36px #000a;
+      padding: 24px 16px 24px 16px;
+      margin-top: 40px;
+      transition: width .3s;
+      user-select: none;
+    }
+    .calculator.landscape {
+      width: 620px;
+    }
+    .display {
+      background: #111;
+      color: #fff;
+      text-align: right;
+      font-size: 2.2em;
+      padding: 24px 16px 24px 16px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      min-height: 2.2em;
+      font-variant-numeric: tabular-nums;
+      overflow-x: auto;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.2em;
+      height: 54px;
+      cursor: pointer;
+      outline: none;
+      transition: background .15s;
+    }
+    .btn:active {
+      background: #444;
+    }
+    .btn-op {
+      background: #f69906;
+      color: #fff;
+    }
+    .btn-func {
+      background: #a5a5a5;
+      color: #111;
+    }
+    .btn-0 {
+      flex: 2;
+    }
+    .note {
+      margin-top: 10px;
+      color: #ccc;
+      font-size: 0.98em;
+      text-align: center;
+    }
+    /* Responsivo per mobile */
+    @media (max-width: 700px) {
+      .calculator.landscape { width: 99vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" id="calc">
+    <div class="display" id="display" title="Tocca per cambiare modalità">0</div>
+    <div class="buttons" id="buttonArea"></div>
+    <div class="note">
+      Tocca il display per cambiare tra modalità base/scientifica.<br>
+      Premi "=" per impostare il risultato desiderato.
+    </div>
+  </div>
+  <script>
+    // Tasti base
+    const baseButtons = [
+      ["C", "+/-", "%", "/"],
+      ["7", "8", "9", "x"],
+      ["4", "5", "6", "-"],
+      ["1", "2", "3", "+"],
+      ["0", ".", "="]
+    ];
+    // Tasti scientifici
+    const scientificButtons = [
+      ["2nd","(",")","mc","m+","m-","mr","C","+/-","%","/"],
+      ["x²","x³","xʸ","eˣ","10ˣ","7","8","9","x"],
+      ["√x","³√x","y√x","ln","log₁₀","4","5","6","-"],
+      ["x!","sin","cos","tan","e","1","2","3","+"],
+      ["Rad","sinh","cosh","tanh","π","0",".","="]
+    ];
+
+    // Stato
+    let orientation = "portrait"; // "landscape" = scientifica
+    let display = "0";
+    let forcedValue = null;
+
+    const calc = document.getElementById("calc");
+    const displayEl = document.getElementById("display");
+    const buttonArea = document.getElementById("buttonArea");
+
+    // Utility
+    function toScientific(num, forced) {
+      if (forced !== null && !isNaN(forced)) {
+        return Number(forced).toExponential(6);
+      }
+      return Number(num).toExponential(6);
+    }
+    function toNormal(num, forced) {
+      if (forced !== null) return forced.toString();
+      return num.toString();
+    }
+
+    function renderButtons() {
+      buttonArea.innerHTML = "";
+      const btns = orientation === "portrait" ? baseButtons : scientificButtons;
+      btns.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+        row.forEach(b => {
+          const btn = document.createElement("button");
+          btn.className = "btn";
+          // Colorazione stile iOS
+          if (["/","x","+","-","="].includes(b)) btn.classList.add("btn-op");
+          if (["C","+/-","%"].includes(b) || ["mc","m+","m-","mr","Rad","π","e"].includes(b)) btn.classList.add("btn-func");
+          if (b === "0") btn.classList.add("btn-0");
+          btn.textContent = b;
+          btn.onclick = () => handleButton(b);
+          rowDiv.appendChild(btn);
+        });
+        buttonArea.appendChild(rowDiv);
+      });
+    }
+
+    function updateDisplay() {
+      let result = orientation === "portrait"
+        ? (isNaN(display) ? display : toScientific(display, forcedValue))
+        : (forcedValue !== null ? toNormal(display, forcedValue) : display);
+      displayEl.textContent = result;
+    }
+
+    function reset() {
+      display = "0";
+      forcedValue = null;
+      updateDisplay();
+    }
+
+    function handleButton(val) {
+      if (val === "C") return reset();
+      if (val === "=") {
+        forcedValue = prompt("Inserisci il risultato desiderato:", "42");
+        updateDisplay();
+        return;
+      }
+      if (forcedValue !== null) {
+        display = forcedValue.toString();
+        updateDisplay();
+        return;
+      }
+      // Operazioni semplici demo (puoi espandere la logica per veri calcoli)
+      if (["/","x","+","-"].includes(val)) {
+        if (/[+\-x/]/.test(display[display.length-1])) return;
+        display += val;
+      } else if (val === "+/-") {
+        if (display.startsWith("-")) display = display.slice(1);
+        else if (display !== "0") display = "-" + display;
+      } else if (val === "%") {
+        display = (parseFloat(display) / 100).toString();
+      } else if (val === ".") {
+        if (!display.includes(".")) display += ".";
+      } else if (!isNaN(val)) {
+        display = display === "0" ? val : display + val;
+      } else {
+        // Scientifici: nessuna azione reale (demo)
+      }
+      updateDisplay();
+    }
+
+    // Cambio modalità toccando il display
+    displayEl.onclick = () => {
+      orientation = (orientation === "portrait" ? "landscape" : "portrait");
+      calc.classList.toggle("landscape", orientation === "landscape");
+      renderButtons();
+      updateDisplay();
+    };
+
+    // Inizializza calcolatrice
+    renderButtons();
+    updateDisplay();
+
+    // Per touch: scorri per cambiare modalità (opzionale)
+    let startX = null;
+    displayEl.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    displayEl.addEventListener('touchend', e => {
+      if (startX !== null && Math.abs(e.changedTouches[0].clientX - startX) > 60) {
+        displayEl.onclick();
+      }
+      startX = null;
+    });
+  </script>
+</body>
+</html>
